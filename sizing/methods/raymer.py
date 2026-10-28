@@ -32,27 +32,30 @@ RESERVE_FACTOR = 1.06
 LD_FACTORS = {"prop": {"cruise": 1.0, "loiter": 0.866}, "jet": {"cruise": 0.866, "loiter": 1.0}}
 
 
-def standard_segments(cruise, loiter=None):
-    """Prosta misja z rozdz. 3: rozruch i start, wznoszenie, przelot, (krążenie), lądowanie."""
-    segs = [FixedFraction("warmup_takeoff", WARMUP_TAKEOFF), FixedFraction("climb", CLIMB), cruise]
-    if loiter is not None:
-        segs.append(loiter)
-    segs.append(FixedFraction("landing", LANDING))
-    return segs
-
-
 class Raymer(SizingMethod):
     name = "Raymer"
 
-    def __init__(self, category: str = "ga_single_engine", K_vs: float = 1.0):
+    def __init__(self, category: str = "ga_single_engine", K_vs: float = 1.0,
+                 reserve_factor: float = RESERVE_FACTOR):
+        """reserve_factor = 1.06 jak w rów. 3.11; przy rezerwie liczonej jawnie
+        (wspólnej dla wszystkich metod) można podać 1.0."""
         self.A, self.C = EMPTY_WEIGHT_TABLE_3_1[category]
         self.K_vs = K_vs
+        self.reserve_factor = reserve_factor
+
+    def standard_segments(self, inp: MissionInput) -> list:
+        """Prosta misja z rozdz. 3: rozruch i start, wznoszenie, przelot, (krążenie), lądowanie."""
+        segs = [FixedFraction("warmup_takeoff", WARMUP_TAKEOFF), FixedFraction("climb", CLIMB), inp.cruise]
+        if inp.reserve is not None:
+            segs.append(inp.reserve)
+        segs.append(FixedFraction("landing", LANDING))
+        return segs
 
     def empty_weight_fraction(self, W0: float, inp: MissionInput) -> float:
         return self.A * N_to_lbf(W0) ** self.C * self.K_vs
 
     def fuel_fraction(self, W0: float, inp: MissionInput) -> float:
-        return RESERVE_FACTOR * (1 - mission_weight_fraction(inp.segments))
+        return self.reserve_factor * (1 - mission_weight_fraction(self.segments(inp)))
 
     def required_inputs(self) -> list[str]:
         return ["W_crew", "W_payload", "category", "range", "V_cruise", "L/D", "SFC", "eta_p"]

@@ -10,3 +10,10 @@ python -m venv .venv
 pip install -r requirements.txt
 python -m pytest
 ```
+
+Wymagany Python 3.10 lub nowszy (składnia `float | None`).
+
+```
+python -m examples.c172
+python -m examples.walidacja
+```

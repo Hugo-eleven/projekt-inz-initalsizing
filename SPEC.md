@@ -1,6 +1,6 @@
 # SPEC – narzędzie do wstępnego doboru masy i parametrów samolotu GA
 
-Wersja robocza 0.1 (2026-10-26). Do uzgodnienia z Marcinem przed pisaniem kodu.
+Wersja robocza 0.2 (2026-10-27; 0.1 z 2026-10-26). Do uzgodnienia z Marcinem przed pisaniem kodu.
 
 ## 1. Cel
 
@@ -56,12 +56,14 @@ Solver dostaje `residual` i zwraca W₀, liczbę iteracji, historię zbieżnośc
 
 | | Gudmundsson (2014) | Raymer (1992, 2nd ed.) | Roskam (Part I, 1985) |
 |---|---|---|---|
-| Równanie wagowe | rozdz. 6.2.1 „Method 1”, rów. (6-6)–(6-9), przykład 6-2 | rozdz. 3.2, rów. (3.1)–(3.4) | rozdz. 2 (W_TO = W_E + W_F + W_PL + W_crew) |
-| Masa własna | rozdz. 6.2.2 „Historical Empty Weight” | Tabela 3.1, W_e/W₀ = A·W₀^C·K_vs | regresja log₁₀W_E = (log₁₀W_TO − A)/B, współczynniki z tabeli w rozdz. 2 |
-| Paliwo | analiza misji, rozdz. 6.1.4 | frakcje faz: Tabela 3.2 + Breguet (3.5)–(3.8) | frakcje faz misji (tabela fuel fractions), Breguet |
+| Równanie wagowe | rów. (6-9); „Method 1” (§6.2.1, stałe We/W0 i Wf/W0) jako wariant kontrolny, Example 6-2 | rozdz. 3.2, rów. (3.1)–(3.4) | (2.1)–(2.5), krok 7: W_E,tent = W_E z regresji; W_tfo = 0,005·W_TO |
+| Masa własna | §6.2.2, rów. (6-14): We/W0 = 0,8841 − 0,0333·ln W0 [lbf] | Tabela 3.1, W_e/W₀ = A·W₀^C·K_vs | (2.16): log₁₀W_E = (log₁₀W_TO − A)/B, tab. 2.15 (s. 47) |
+| Paliwo | §20.5: tab. 20-6, przelot (20-12) z (20-9), rezerwa (20-22), bez współczynnika 1,06 | frakcje faz: Tabela 3.2 + Breguet (3.5)–(3.8) | (2.13)–(2.15), tab. 2.1 (s. 12), przelot (2.9), krążenie (2.11) |
 | Dobór W/S, W/P | rozdz. 3.2, rów. (3-1)–(3-7) | rozdz. 5 | rozdz. 3 (Part I) |
 
-Numery z Roskama trzeba potwierdzić ręcznie na skanach (brak warstwy tekstowej). Każdy współczynnik w `regressions.yaml` ma pole `source` z numerem tabeli i strony, żeby dało się go zacytować w pracy.
+Numery z Roskama sprawdzone na skanach (PDF = strona druku + 12). Każdy współczynnik w `regressions.yaml` ma pole `source` z numerem tabeli i strony, żeby dało się go zacytować w pracy.
+
+Rezerwa paliwa jest wspólna dla metod (jawna faza `reserve` w `MissionInput`). U Raymera przy porównaniu ustawiamy wtedy `reserve_factor = 1.0`, żeby nie liczyć rezerwy podwójnie.
 
 ## 4. Solver
 
@@ -74,7 +76,7 @@ Kryterium stopu: |ΔW₀|/W₀ < 1e-6 lub limit iteracji. Zapisywana historia s�
 
 ## 5. Weryfikacja i walidacja
 
-- **Weryfikacja:** testy pytest odtwarzające przykłady liczbowe z książek (Gudmundsson Example 6-2, Raymer przykład GA z rozdz. 21.2, przykład z Roskama Part I) z tolerancją ok. 1%.
+- **Weryfikacja:** testy pytest odtwarzające przykłady liczbowe z książek (Gudmundsson Example 6-2 i 20-12, Raymer Box 3.1, Roskam przykład 2.6.1) z tolerancją ok. 1%.
 - **Walidacja:** dane rzeczywiste z TCDS/POH dla C172, SR22 i trzeciego samolotu; liczony błąd względny MTOW, masy własnej, S i P.
 
 ## 6. Interfejs

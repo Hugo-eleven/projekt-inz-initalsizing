@@ -5,6 +5,13 @@ from math import exp
 from .units import G0
 
 
+def _check_sfc(seg, needs_V: bool):
+    if seg.c_t is None and (seg.c_p is None or seg.eta_p is None):
+        raise ValueError(f"{seg.name}: podaj c_t (odrzut) albo c_p i eta_p (śmigło)")
+    if needs_V and seg.V is None:
+        raise ValueError(f"{seg.name}: dla śmigła potrzebna jest prędkość V")
+
+
 @dataclass
 class FixedFraction:
     """Faza o frakcji przyjętej statystycznie (rozruch i start, wznoszenie, lądowanie)."""
@@ -30,6 +37,9 @@ class Cruise:
     c_t: float | None = None
     name: str = "cruise"
 
+    def __post_init__(self):
+        _check_sfc(self, needs_V=False)
+
     def weight_fraction(self) -> float:
         if self.c_t is not None:
             return exp(-self.range_m * self.c_t / (self.V * self.LD))
@@ -46,6 +56,9 @@ class Loiter:
     eta_p: float | None = None
     c_t: float | None = None
     name: str = "loiter"
+
+    def __post_init__(self):
+        _check_sfc(self, needs_V=self.c_t is None)
 
     def weight_fraction(self) -> float:
         c = self.c_t if self.c_t is not None else self.c_p * G0 * self.V / self.eta_p
